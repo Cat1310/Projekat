@@ -80,13 +80,23 @@ class ProductList : AppCompatActivity() {
                 }
             }
         }
-
-        productAdapter = ProductAdapter(productList) { product ->
-            val intent = Intent(this@ProductList, ProductDetail::class.java).apply {
-                putExtra("product", product)
+        val cart = mutableListOf<Product>()
+        productAdapter = ProductAdapter(productList,
+            onClick = { product ->
+                val intent = Intent(this@ProductList, ProductDetail::class.java).apply {
+                    putExtra("product", product)
+                }
+                resultLauncher.launch(intent)
+            },
+            onAddToCartClick = { product ->
+                val existingProduct = cart.find { it.id == product.id }
+                if (existingProduct != null) {
+                    existingProduct.quantity += 1
+                } else {
+                    cart.add(product.copy(quantity = 1))
+                }
             }
-            resultLauncher.launch(intent)
-        }
+        )
 
         recyclerView.apply {
             layoutManager = LinearLayoutManager(this@ProductList)
@@ -101,12 +111,14 @@ class ProductList : AppCompatActivity() {
 
     inner class ProductAdapter(
         private val products: List<Product>,
-        private val onClick: (Product) -> Unit
+        private val onClick: (Product) -> Unit,
+        private val onAddToCartClick: (Product) -> Unit
     ) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
 
         inner class ProductViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val textViewName: TextView = TextView(this@ProductList).apply { id = View.generateViewId() }
             val textViewPrice: TextView = TextView(this@ProductList).apply { id = View.generateViewId() }
+            val buttonAddToCart: Button = Button(this@ProductList).apply { id = View.generateViewId(); text = "Dodaj u Korpu" }
 
             init {
                 val productLayout = LinearLayout(this@ProductList).apply {
@@ -118,10 +130,15 @@ class ProductList : AppCompatActivity() {
                     )
                     addView(textViewName)
                     addView(textViewPrice)
+                    addView(buttonAddToCart)
                 }
 
                 itemView.setOnClickListener {
                     onClick(products[adapterPosition])
+                }
+
+                buttonAddToCart.setOnClickListener {
+                    onAddToCartClick(products[adapterPosition])
                 }
 
                 (itemView as LinearLayout).addView(productLayout)
@@ -148,4 +165,5 @@ class ProductList : AppCompatActivity() {
 
         override fun getItemCount() = products.size
     }
+
 }
